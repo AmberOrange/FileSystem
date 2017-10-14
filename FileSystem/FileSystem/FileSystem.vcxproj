@@ -18,6 +18,19 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Header\block.h" />
+    <ClInclude Include="Header\blockdevice.h" />
+    <ClInclude Include="Header\filesystem.h" />
+    <ClInclude Include="Header\memblockdevice.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\block.cpp" />
+    <ClCompile Include="Source\blockdevice.cpp" />
+    <ClCompile Include="Source\filesystem.cpp" />
+    <ClCompile Include="Source\memblockdevice.cpp" />
+    <ClCompile Include="Source\shell.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{5A93AAC0-09EC-4583-BB06-DBFA3BEFEC77}</ProjectGuid>
@@ -110,8 +123,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
