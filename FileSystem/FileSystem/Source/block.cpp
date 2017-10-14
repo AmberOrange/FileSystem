@@ -97,12 +97,4 @@ std::string Block::toString() const {
     return output;
 }
 
-char* Block::toChar() const
-{
-	return this->block;
-}
-
-
-
-
 

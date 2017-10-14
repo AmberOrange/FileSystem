@@ -5,6 +5,8 @@
 const int MAXCOMMANDS = 8;
 const int NUMAVAILABLECOMMANDS = 15;
 
+FileSystem fileSystem;
+
 std::string availableCommands[NUMAVAILABLECOMMANDS] = {
     "quit","format","ls","create","cat","createImage","restoreImage",
     "rm","cp","append","mv","mkdir","cd","pwd","help"
@@ -15,6 +17,10 @@ int parseCommandString(const std::string &userCommand, std::string strArr[]);
 int findCommand(std::string &command);
 bool quit();
 std::string help();
+
+void format();
+void mkdir(const std::string& path);
+void cd(const std::string& path);
 
 /* More functions ... */
 
@@ -41,6 +47,7 @@ int main(void) {
 					bRun = quit();                
 					break;
 				case 1: // format
+					format();
 					break;
 				case 2: // ls
 					std::cout << "Listing directory" << std::endl;
@@ -62,8 +69,10 @@ int main(void) {
 				case 10: // mv
 					break;
 				case 11: // mkdir
+					mkdir(commandArr[1]);
 					break;
 				case 12: // cd
+					cd(commandArr[1]);
 					break;
 				case 13: // pwd
 					break;
@@ -74,11 +83,13 @@ int main(void) {
 					std::cout << "Unknown command: " << commandArr[0] << std::endl;
 				}
 			}
-			catch (std::string e)
+			catch (char* e)
 			{
 				std::cout << "Error: " << e << std::endl;
 			}
         }
+		for (int i = 0; i < MAXCOMMANDS; i++)
+			commandArr[i] = "";
     } while (bRun == true);
 
     return 0;
@@ -134,3 +145,17 @@ std::string help() {
 }
 
 /* Insert code for your shell functions and call them from the switch-case */
+void format()
+{
+	fileSystem.format();
+}
+
+void mkdir(const std::string& path)
+{
+	fileSystem.createFolder(path);
+}
+
+void cd(const std::string& path)
+{
+	fileSystem.changeDirectory(path);
+}

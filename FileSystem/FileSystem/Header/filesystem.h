@@ -29,11 +29,14 @@ private:
 
 	// Variables ---
 	bool occupiedList[250];
-	std::string workDir;
-	dirBlock* pWorkDir;
+	//std::string workDir;
+	int workBlock;
+	//dirBlock* pWorkDir;
 
 	// Private Functions ---
-	int getDirBlockIndex(const std::string& path, std::string& name) const;
+	std::vector<std::string> splitPath(const std::string path, bool& abs) const;
+	int getDirBlockIndex(const std::string& path, std::string& name, bool create = true) const;
+	int getDirBlockIndex(const std::string& path) const;
 	int getFreeBlock() const;
 	void setOccupiedBlock(const int blockNr);
 
@@ -53,6 +56,8 @@ public:
 
     /* Creates a folder in the filesystem */
 	void createFolder(const std::string& path);
+
+	void changeDirectory(const std::string& path);
 
     /* Removes a file in the filesystem */
     // removeFile(...);
