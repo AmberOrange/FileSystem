@@ -2,7 +2,7 @@
 #include <sstream>
 
 
-int FileSystem::getDirBlockIndex(const std::string& path) const
+int FileSystem::getDirBlockIndex(const std::string& path, std::string& name) const
 {
 	std::stringstream stream = std::stringstream(path);
 	std::string token, dataStr;
@@ -70,11 +70,30 @@ int FileSystem::getDirBlockIndex(const std::string& path) const
 		}
 	}
 
+	std::getline(stream, token);	// If this doesn't work, use the Marcus Algorith 
+	name = token;					// std::string hello[hello.size()] = '/';
+
 	return nextBlock;
 }
 
-FileSystem::FileSystem() {
+int FileSystem::getFreeBlock() const
+{
+	for (int i = 0; i < 250; i++)
+	{
+		if (!this->occupiedList[i])
+			return i;
+	}
+	throw "No available blocks left";
+}
 
+void FileSystem::setOccupiedBlock(const int blockNr)
+{
+	if (blockNr < 0 || blockNr >= 250)
+		throw "Block out of range";
+	this->occupiedList[blockNr] = true;
+}
+
+FileSystem::FileSystem() {
 }
 
 FileSystem::~FileSystem() {
@@ -85,8 +104,22 @@ FileSystem::~FileSystem() {
 
 void FileSystem::format() {
 	mMemBlockDevice.reset();
+	this->occupiedList[0] = true;	// Root directory
+	for (int i = 1; i < 250; i++)
+		this->occupiedList[i] = false;
 }
 
 void FileSystem::createFile(const std::string& path) {
 	//TODO: Implementera denna =D
+}
+
+void FileSystem::createFolder(const std::string& path)
+{
+	std::string name;
+	int curBlock = this->getDirBlockIndex(path, name);
+
+	std::string dataStr = this->mMemBlockDevice.readBlock(curBlock).toString();
+	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+
+	curDir->elements[curDir->nrOfElements++] =
 }

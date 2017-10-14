@@ -7,30 +7,35 @@
 class FileSystem
 {
 private:
-    MemBlockDevice mMemBlockDevice;
-    
-    struct dirElement {
+	MemBlockDevice mMemBlockDevice;
+
+	struct dirElement {
 		char flags;
 		char pointer;
 		char name[14];
-    };
-    struct dirBlock {
+	};
+	struct dirBlock {
+		char flags;		// Is this block occupied or not?
 		char nrOfElements;
 		dirElement elements[31];
 		char next;
-		char padding[14];
-    };
-    struct fileBlock {
-		char data[511];
+		char padding[13];
+	};
+	struct fileBlock {
+		char flags;		// Is this block occupied or not?
+		char data[510];
 		char next;
-    };
+	};
 
 	// Variables ---
+	bool occupiedList[250];
 	std::string workDir;
 	dirBlock* pWorkDir;
 
 	// Private Functions ---
-	int getDirBlockIndex(const std::string& path) const;
+	int getDirBlockIndex(const std::string& path, std::string& name) const;
+	int getFreeBlock() const;
+	void setOccupiedBlock(const int blockNr);
 
 public:
     FileSystem();
@@ -47,7 +52,7 @@ public:
     void createFile(const std::string& path);
 
     /* Creates a folder in the filesystem */
-    // createFolderi(...);
+	void createFolder(const std::string& path);
 
     /* Removes a file in the filesystem */
     // removeFile(...);
