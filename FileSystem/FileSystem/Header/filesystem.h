@@ -39,6 +39,7 @@ private:
 	int getDirBlockIndex(const std::string& path) const;
 	int getFreeBlock() const;
 	void setOccupiedBlock(const int blockNr);
+	std::stringstream recursivePath(const int blockNr, const int childNr);
 
 public:
     FileSystem();
@@ -58,6 +59,8 @@ public:
 	void createFolder(const std::string& path);
 
 	void changeDirectory(const std::string& path);
+
+	std::string printWorkDirectory();
 
     /* Removes a file in the filesystem */
     // removeFile(...);

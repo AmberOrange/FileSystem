@@ -100,6 +100,46 @@ void FileSystem::setOccupiedBlock(const int blockNr)
 	this->occupiedList[blockNr] = true;
 }
 
+std::stringstream FileSystem::recursivePath(const int blockNr, const int childNr)
+{
+	std::stringstream ss;
+	if (childNr == 0)
+	{
+		ss << "/";
+		return ss;
+	} 
+
+	std::string dataStr = this->mMemBlockDevice.readBlock(blockNr).toString();
+	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+
+	bool found = false;
+	int parentNr = -1;
+	for (int i = 0; i < curDir->nrOfElements && !found; i++)
+	{
+		if (strcmp(curDir->elements[i].name, "..") == 0)
+		{
+			found = true;
+			parentNr = curDir->elements[i].pointer;		// Can be fixed with index 1 :)
+		}
+	}
+	if (!found)
+		throw "Lost child";
+
+	if (childNr == blockNr)
+	{
+		return this->recursivePath(parentNr, blockNr);
+	}
+
+	for (int i = 0; i < curDir->nrOfElements; i++)
+	{
+		if (curDir->elements[i].pointer == childNr)
+		{
+			ss << this->recursivePath(parentNr, blockNr).str() << curDir->elements[i].name << "/";
+			return ss;
+		}
+	}
+}
+
 FileSystem::FileSystem() {
 }
 
@@ -177,4 +217,9 @@ void FileSystem::createFolder(const std::string& path)
 void FileSystem::changeDirectory(const std::string& path)
 {
 	this->workBlock = this->getDirBlockIndex(path);
+}
+
+std::string FileSystem::printWorkDirectory()
+{
+	return this->recursivePath(this->workBlock, this->workBlock).str();
 }

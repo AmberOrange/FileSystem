@@ -21,6 +21,7 @@ std::string help();
 void format();
 void mkdir(const std::string& path);
 void cd(const std::string& path);
+std::string pwd();
 
 /* More functions ... */
 
@@ -28,11 +29,12 @@ int main(void) {
 
 	std::string userCommand, commandArr[MAXCOMMANDS];
 	std::string user = "user@DV1492";    // Change this if you want another user to be displayed
-	std::string currentDir = "/";    // current directory, used for output
+	std::string currentDir = "/";
 
     bool bRun = true;
 
     do {
+		currentDir = pwd();    // current directory, used for output
         std::cout << user << ":" << currentDir << "$ ";
         getline(std::cin, userCommand);
 
@@ -75,6 +77,7 @@ int main(void) {
 					cd(commandArr[1]);
 					break;
 				case 13: // pwd
+					std::cout << pwd() << std::endl;
 					break;
 				case 14: // help
 					std::cout << help() << std::endl;
@@ -158,4 +161,9 @@ void mkdir(const std::string& path)
 void cd(const std::string& path)
 {
 	fileSystem.changeDirectory(path);
+}
+
+std::string pwd()
+{
+	return fileSystem.printWorkDirectory();
 }
