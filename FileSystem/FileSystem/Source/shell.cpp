@@ -34,44 +34,50 @@ int main(void) {
         if (nrOfCommands > 0) {
 
             int cIndex = findCommand(commandArr[0]);
-            switch(cIndex) {
+			try {
+				switch(cIndex) {
 
-			case 0: //quit
-				bRun = quit();                
-                break;
-            case 1: // format
-                break;
-            case 2: // ls
-                std::cout << "Listing directory" << std::endl;
-                break;
-            case 3: // create
-                break;
-            case 4: // cat
-                break;
-            case 5: // createImage
-                break;
-            case 6: // restoreImage
-                break;
-            case 7: // rm
-                break;
-            case 8: // cp
-                break;
-            case 9: // append
-                break;
-            case 10: // mv
-                break;
-            case 11: // mkdir
-                break;
-            case 12: // cd
-                break;
-            case 13: // pwd
-                break;
-            case 14: // help
-                std::cout << help() << std::endl;
-                break;
-            default:
-                std::cout << "Unknown command: " << commandArr[0] << std::endl;
-            }
+				case 0: //quit
+					bRun = quit();                
+					break;
+				case 1: // format
+					break;
+				case 2: // ls
+					std::cout << "Listing directory" << std::endl;
+					break;
+				case 3: // create
+					break;
+				case 4: // cat
+					break;
+				case 5: // createImage
+					break;
+				case 6: // restoreImage
+					break;
+				case 7: // rm
+					break;
+				case 8: // cp
+					break;
+				case 9: // append
+					break;
+				case 10: // mv
+					break;
+				case 11: // mkdir
+					break;
+				case 12: // cd
+					break;
+				case 13: // pwd
+					break;
+				case 14: // help
+					std::cout << help() << std::endl;
+					break;
+				default:
+					std::cout << "Unknown command: " << commandArr[0] << std::endl;
+				}
+			}
+			catch (std::string e)
+			{
+				std::cout << "Error: " << e << std::endl;
+			}
         }
     } while (bRun == true);
 

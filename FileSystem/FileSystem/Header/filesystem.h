@@ -10,20 +10,28 @@ private:
     MemBlockDevice mMemBlockDevice;
     
     struct dirElement {
-	char flags;
-	char pointer;
-	char name[14];
+		char flags;
+		char pointer;
+		char name[14];
     };
     struct dirBlock {
-	dirElement elements[31];
-	char next;
-	char padding[15];
+		char nrOfElements;
+		dirElement elements[31];
+		char next;
+		char padding[14];
     };
     struct fileBlock {
-	char data[511];
-	char next;
+		char data[511];
+		char next;
     };
-    // Here you can add your own data structures
+
+	// Variables ---
+	std::string workDir;
+	dirBlock* pWorkDir;
+
+	// Private Functions ---
+	int getDirBlockIndex(const std::string& path) const;
+
 public:
     FileSystem();
     ~FileSystem();
