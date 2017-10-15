@@ -63,7 +63,7 @@ public:
 
 	std::string printWorkDirectory();
 
-	void listDir(const std::string& path);
+	std::string listDir(const std::string& path);
 
 	std::string readFile(const std::string& path);
 

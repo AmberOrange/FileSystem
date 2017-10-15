@@ -19,6 +19,7 @@ bool quit();
 std::string help();
 
 void format();
+void ls(const std::string& path);
 void create(const std::string& path);
 void cat(const std::string& path);
 void rm(const std::string& path);
@@ -55,7 +56,7 @@ int main(void) {
 					format();
 					break;
 				case 2: // ls
-					std::cout << "Listing directory" << std::endl;
+					ls(commandArr[1]);
 					break;
 				case 3: // create
 					create(commandArr[1]);
@@ -160,6 +161,11 @@ std::string help() {
 void format()
 {
 	fileSystem.format();
+}
+
+void ls(const std::string& path)
+{
+	std::cout << fileSystem.listDir(path);
 }
 
 void create(const std::string& path)

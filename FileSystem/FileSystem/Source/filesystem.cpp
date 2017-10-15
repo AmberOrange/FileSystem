@@ -284,16 +284,24 @@ std::string FileSystem::printWorkDirectory()
 	return this->recursivePath(this->workBlock, this->workBlock).str();
 }
 
-void FileSystem::listDir(const std::string& path)
+std::string FileSystem::listDir(const std::string& path)
 {
+	std::stringstream ss;
 	int curNr;
 	if (path == "")
 		curNr = this->workBlock;
 	else
 		curNr = this->getDirBlockIndex(path);
 
-	//std::string dataStr = this->mMemBlockDevice.readBlock(curBlock).toString();
-	//dirBlock* curDir = (dirBlock*)dataStr.c_str();
+	std::string dataStr = this->mMemBlockDevice.readBlock(curNr).toString();
+	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+
+	ss << "Type\t\tName\t\tPerm.\t\tSize" << std::endl;
+	for (int i = 0; i < curDir->nrOfElements; i++)
+	{
+		ss << (curDir->elements[i].flags == 0 ? "Folder" : "File") << "\t\t" << curDir->elements[i].name << "\t\t" << "RW" << "\t\t" << this->occupiedList[curDir->elements[i].pointer] << std::endl;
+	}
+	return ss.str();
 }
 
 std::string FileSystem::readFile(const std::string& path)
