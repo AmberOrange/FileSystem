@@ -3,13 +3,13 @@
 #include "../Header/filesystem.h"
 
 const int MAXCOMMANDS = 8;
-const int NUMAVAILABLECOMMANDS = 15;
+const int NUMAVAILABLECOMMANDS = 16;
 
 FileSystem fileSystem;
 
 std::string availableCommands[NUMAVAILABLECOMMANDS] = {
     "quit","format","ls","create","cat","createImage","restoreImage",
-    "rm","cp","append","mv","mkdir","cd","pwd","help"
+    "rm","cp","append","mv","mkdir","cd","pwd","help","clear"
 };
 
 /* Takes usercommand from input and returns number of commands, commands are stored in strArr[] */
@@ -19,6 +19,9 @@ bool quit();
 std::string help();
 
 void format();
+void create(const std::string& path);
+void cat(const std::string& path);
+void rm(const std::string& path);
 void mkdir(const std::string& path);
 void cd(const std::string& path);
 std::string pwd();
@@ -55,14 +58,17 @@ int main(void) {
 					std::cout << "Listing directory" << std::endl;
 					break;
 				case 3: // create
+					create(commandArr[1]);
 					break;
 				case 4: // cat
+					cat(commandArr[1]);
 					break;
 				case 5: // createImage
 					break;
 				case 6: // restoreImage
 					break;
 				case 7: // rm
+					rm(commandArr[1]);
 					break;
 				case 8: // cp
 					break;
@@ -81,6 +87,9 @@ int main(void) {
 					break;
 				case 14: // help
 					std::cout << help() << std::endl;
+					break;
+				case 15:
+					system("cls");	// Clear ONLY FOR WINDOWS
 					break;
 				default:
 					std::cout << "Unknown command: " << commandArr[0] << std::endl;
@@ -151,6 +160,24 @@ std::string help() {
 void format()
 {
 	fileSystem.format();
+}
+
+void create(const std::string& path)
+{
+	std::string text;
+	std::cout << "Enter text: " << std::endl;
+	std::getline(std::cin, text);
+	fileSystem.createFile(path, text);
+}
+
+void cat(const std::string& path)
+{
+	std::cout << fileSystem.readFile(path) << std::endl;
+}
+
+void rm(const std::string& path)
+{
+	fileSystem.removeFile(path);
 }
 
 void mkdir(const std::string& path)

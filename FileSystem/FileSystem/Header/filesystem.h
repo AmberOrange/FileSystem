@@ -28,7 +28,7 @@ private:
 	};
 
 	// Variables ---
-	bool occupiedList[250];
+	int occupiedList[250];
 	//std::string workDir;
 	int workBlock;
 	//dirBlock* pWorkDir;
@@ -40,6 +40,7 @@ private:
 	int getFreeBlock() const;
 	void setOccupiedBlock(const int blockNr);
 	std::stringstream recursivePath(const int blockNr, const int childNr);
+	void recursiveRemove(const int blockNr);
 
 public:
     FileSystem();
@@ -53,7 +54,7 @@ public:
     void format();
 
     /* This function creates a file in the filesystem */
-    void createFile(const std::string& path);
+    void createFile(const std::string& path, const std::string& text);
 
     /* Creates a folder in the filesystem */
 	void createFolder(const std::string& path);
@@ -61,6 +62,12 @@ public:
 	void changeDirectory(const std::string& path);
 
 	std::string printWorkDirectory();
+
+	void listDir(const std::string& path);
+
+	std::string readFile(const std::string& path);
+
+	void removeFile(const std::string& path);
 
     /* Removes a file in the filesystem */
     // removeFile(...);
