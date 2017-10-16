@@ -154,6 +154,70 @@ void FileSystem::recursiveRemove(const int blockNr)
 	}
 }
 
+int FileSystem::getBlockNr(const int dirBlockNr, const std::string& name)
+{
+	std::string dataStr = this->mMemBlockDevice.readBlock(dirBlockNr).toString();
+	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+
+	bool found = false;
+	int index;
+	do
+	{
+		for (int i = 0; i < curDir->nrOfElements && !found; i++)
+		{
+			if (strcmp(curDir->elements[i].name, name.c_str()) == 0)
+			{
+				found = true;
+				index = curDir->elements[i].pointer;
+			}
+		}
+		if (curDir->next != 0)
+		{
+			dataStr = this->mMemBlockDevice.readBlock(curDir->next).toString();
+			curDir = (dirBlock*)dataStr.c_str();
+		}
+	} while (curDir->next != 0);
+
+	if (!found)
+		throw "Couldn't find the file/folder";
+
+	return index;
+}
+
+void FileSystem::addDirElement(const int blockNr, dirElement* element)
+{
+	std::string dataStr = this->mMemBlockDevice.readBlock(blockNr).toString();
+	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+
+	if (curDir->nrOfElements > 31)
+	{
+		curDir->next = this->createDirBlock();
+		dataStr = this->mMemBlockDevice.readBlock(curDir->next).toString();
+		curDir = (dirBlock*)dataStr.c_str();
+	}
+
+	curDir->elements[curDir->nrOfElements++] = *element;
+}
+
+int FileSystem::createDirBlock()
+{
+	dirBlock newBlock;
+	memset(&newBlock, 0, sizeof(dirBlock));
+	int blockNr = this->getFreeBlock();
+
+	strncpy_s(newBlock.elements[0].name, ".", 2);
+	newBlock.elements[0].pointer = 0;
+	strncpy_s(newBlock.elements[1].name, "..", 3);
+	newBlock.elements[1].pointer = 0;
+
+	newBlock.nrOfElements = 2;
+
+	this->setOccupiedBlock(blockNr);
+
+	this->mMemBlockDevice.writeBlock(blockNr, (char*)&newBlock);
+	return blockNr;
+}
+
 FileSystem::FileSystem() {
 }
 
@@ -166,22 +230,24 @@ FileSystem::~FileSystem() {
 void FileSystem::format() {
 	mMemBlockDevice.reset();
 	//this->occupiedList[0] = true;	// Root directory
-	for (int i = 1; i < 250; i++)
+	for (int i = 0; i < 250; i++)
 		this->occupiedList[i] = -1;
 
-	dirBlock newBlock;
-	memset(&newBlock, 0, sizeof(dirBlock));
+	//dirBlock newBlock;
+	//memset(&newBlock, 0, sizeof(dirBlock));
 
-	strncpy_s(newBlock.elements[0].name, ".", 2);
-	newBlock.elements[0].pointer = 0;
-	strncpy_s(newBlock.elements[1].name, "..", 3);
-	newBlock.elements[1].pointer = 0;
+	//strncpy_s(newBlock.elements[0].name, ".", 2);
+	//newBlock.elements[0].pointer = 0;
+	//strncpy_s(newBlock.elements[1].name, "..", 3);
+	//newBlock.elements[1].pointer = 0;
 
-	newBlock.nrOfElements = 2;
+	//newBlock.nrOfElements = 2;
 
-	this->setOccupiedBlock(0);
+	//this->setOccupiedBlock(0);
 
-	this->mMemBlockDevice.writeBlock(0, (char*)&newBlock);
+	//this->mMemBlockDevice.writeBlock(0, (char*)&newBlock);
+
+	this->createDirBlock();
 
 	workBlock = 0;
 }
@@ -377,4 +443,43 @@ void FileSystem::removeFile(const std::string& path)
 
 	this->recursiveRemove(fileBlock);
 	this->occupiedList[fileBlock] = -1;
+}
+
+void FileSystem::copyFile(const std::string& source, const std::string& target)
+{
+	std::string sourceName, targetName;
+	int sourceDir = this->getDirBlockIndex(source, sourceName);
+	int targetDir = this->getDirBlockIndex(target, targetName);
+
+	int sourceFile = this->getBlockNr(sourceDir, sourceName);
+	bool fileExists = false;
+	try
+	{
+		this->getBlockNr(targetDir, targetName);
+		fileExists = true;
+	}
+	catch (char* e)
+	{
+
+	}
+
+	if (fileExists)
+		throw "Can't overwrite existing file";
+
+	int targetIndex = this->getFreeBlock();
+	int targetStartIndex = targetIndex;
+	do
+	{
+		std::string sourceStr = this->mMemBlockDevice.readBlock(sourceFile).toString();
+		fileBlock* copiedBlock = (fileBlock*)sourceStr.c_str();
+		if (copiedBlock->next != 0)
+		{
+			sourceFile = copiedBlock->next;
+			copiedBlock->next = this->getFreeBlock();
+		} 
+		this->mMemBlockDevice.writeBlock(targetIndex, (char*)copiedBlock);
+		targetIndex = copiedBlock->next;
+	} while (targetIndex != 0);
+
+
 }
