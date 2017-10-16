@@ -3,6 +3,11 @@
 
 #include "memblockdevice.h"
 #include <string>
+#include <fstream>
+
+#define BLOCKSIZE 512
+#define BLOCKCOUNT 250
+#define NAMECAP 13
 
 class FileSystem
 {
@@ -22,29 +27,33 @@ private:
 		char padding[13];
 	};
 	struct fileBlock {
-		char flags;		// Is this block occupied or not?
-		char data[510];
+		char data[511];
 		char next;
+	};
+	struct binaryBlock {
+		char data[BLOCKCOUNT*BLOCKSIZE];
+		int occupiedList[BLOCKCOUNT];
 	};
 
 	// Variables ---
-	int occupiedList[250];
+	int occupiedList[BLOCKCOUNT];
 	//std::string workDir;
 	int workBlock;
 	//dirBlock* pWorkDir;
 
 	// Private Functions ---
-	std::vector<std::string> splitPath(const std::string path, bool& abs) const;			// TODO: Ersätt en massa med GetBlockNr istället :)
+	std::vector<std::string> splitPath(const std::string path, bool& abs) const;
 	int getDirBlockIndex(const std::string& path, std::string& name, bool create = true) const;
 	int getDirBlockIndex(const std::string& path) const;
 	int getFreeBlock() const;
 	void setOccupiedBlock(const int blockNr);
 	std::stringstream recursivePath(const int blockNr, const int childNr);
 	void recursiveRemove(const int blockNr);
-	int getBlockNr(const int blockNr, const std::string& name);
+	int getBlockNr(const int blockNr, const std::string& name, const char blockType = 2, const char permission = 0) const;	// 0 = Directory; 1 = File; > 2 = Doesn't matter
 	void addDirElement(const int blockNr, dirElement* element);
 	//int getElementIndex();
 	int createDirBlock();
+	void recursiveIncreaseDirSize(const int blockNr, const int size);
 
 public:
     FileSystem();
@@ -71,9 +80,19 @@ public:
 
 	std::string readFile(const std::string& path);
 
+	void writeFile(const std::string& path, const std::string& text);
+
 	void removeFile(const std::string& path);
 
 	void copyFile(const std::string& source, const std::string& target);
+
+	void createImage(const std::string& path);
+
+	void restoreImage(const std::string& path);
+
+	void increaseDirSize(const std::string& path, const int size);
+
+	void chmod(const std::string& path, char permission);
 
     /* Removes a file in the filesystem */
     // removeFile(...);

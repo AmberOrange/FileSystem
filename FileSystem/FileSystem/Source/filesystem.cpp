@@ -46,30 +46,32 @@ int FileSystem::getDirBlockIndex(const std::string& path, std::string& name, boo
 
 	for(int i = 0; i < pathNames.size()+limit; i++)
 	{
-		dataStr = this->mMemBlockDevice.readBlock(nextBlock).toString();
-		curDir = (dirBlock*)dataStr.c_str();
-		bool found = false;
-		
-		for (int j = 0; j < curDir->nrOfElements && !found; j++)
-		{
-			if (curDir->elements[j].name == pathNames[i])	// If name is found and first bit of flags is set to "Directory" (0)
-			{
-				if ((curDir->elements[j].flags & 0x1) == 0)
-				{
-					nextBlock = curDir->elements[j].pointer;
-					found = true;
-				}
-				else {
-					// ERROR, requested folder is actually a file ¯\_("/)_/¯
-					throw "Requested folder is actually a file";
-				}
-			}
-		}
-		if (!found)
-		{
-			// ERROR, Couldn't find requested folder
-			throw "Couldn't find requested folder";
-		}
+		//dataStr = this->mMemBlockDevice.readBlock(nextBlock).toString();
+		//curDir = (dirBlock*)dataStr.c_str();
+		//bool found = false;
+		//
+		//for (int j = 0; j < curDir->nrOfElements && !found; j++)
+		//{
+		//	if (curDir->elements[j].name == pathNames[i])	// If name is found and first bit of flags is set to "Directory" (0)
+		//	{
+		//		if ((curDir->elements[j].flags & 0x1) == 0)
+		//		{
+		//			nextBlock = curDir->elements[j].pointer;
+		//			found = true;
+		//		}
+		//		else {
+		//			// ERROR, requested folder is actually a file ¯\_("/)_/¯
+		//			throw "Requested folder is actually a file";
+		//		}
+		//	}
+		//}
+		//if (!found)
+		//{
+		//	// ERROR, Couldn't find requested folder
+		//	throw "Couldn't find requested folder";
+		//}
+
+		nextBlock = this->getBlockNr(nextBlock, pathNames[i], 0);
 	}
 
 	name = pathNames.back();
@@ -85,7 +87,7 @@ int FileSystem::getDirBlockIndex(const std::string& path) const
 
 int FileSystem::getFreeBlock() const
 {
-	for (int i = 0; i < 250; i++)
+	for (int i = 0; i < BLOCKCOUNT; i++)
 	{
 		if (this->occupiedList[i] == -1)
 			return i;
@@ -95,7 +97,7 @@ int FileSystem::getFreeBlock() const
 
 void FileSystem::setOccupiedBlock(const int blockNr)
 {
-	if (blockNr < 0 || blockNr >= 250)
+	if (blockNr < 0 || blockNr >= BLOCKCOUNT)
 		throw "Block out of range";
 	this->occupiedList[blockNr] = 0;
 }
@@ -154,7 +156,7 @@ void FileSystem::recursiveRemove(const int blockNr)
 	}
 }
 
-int FileSystem::getBlockNr(const int dirBlockNr, const std::string& name)
+int FileSystem::getBlockNr(const int dirBlockNr, const std::string& name, const char blockType, const char permission) const
 {
 	std::string dataStr = this->mMemBlockDevice.readBlock(dirBlockNr).toString();
 	dirBlock* curDir = (dirBlock*)dataStr.c_str();
@@ -167,6 +169,19 @@ int FileSystem::getBlockNr(const int dirBlockNr, const std::string& name)
 		{
 			if (strcmp(curDir->elements[i].name, name.c_str()) == 0)
 			{
+				if (blockType == 0 && (curDir->elements[i].flags & 1) == 1)
+					throw "The folder is actually a file";
+				else if (blockType == 1 && (curDir->elements[i].flags & 1) == 0)
+					throw "The file is actually a folder";
+
+				if (blockType == 1)
+				{
+					if (permission == 0 && (curDir->elements[i].flags & 2) == 0)
+						throw "You don't have permission to read";
+					else if (permission == 1 && (curDir->elements[i].flags & 4) == 0)
+						throw "You don't have permission to write";
+				}
+
 				found = true;
 				index = curDir->elements[i].pointer;
 			}
@@ -197,6 +212,8 @@ void FileSystem::addDirElement(const int blockNr, dirElement* element)
 	}
 
 	curDir->elements[curDir->nrOfElements++] = *element;
+
+	this->mMemBlockDevice.writeBlock(blockNr, (char*)curDir);
 }
 
 int FileSystem::createDirBlock()
@@ -218,6 +235,17 @@ int FileSystem::createDirBlock()
 	return blockNr;
 }
 
+void FileSystem::recursiveIncreaseDirSize(const int blockNr, const int size)
+{
+	std::string dirStr = this->mMemBlockDevice.readBlock(blockNr).toString();
+	dirBlock* curDir = (dirBlock*)dirStr.c_str();
+
+	if (blockNr != 0)														// if not root
+		this->recursiveIncreaseDirSize(curDir->elements[1].pointer, size);	// Call recursive on parent directory
+
+	this->occupiedList[blockNr] += size;
+}
+
 FileSystem::FileSystem() {
 }
 
@@ -230,7 +258,7 @@ FileSystem::~FileSystem() {
 void FileSystem::format() {
 	mMemBlockDevice.reset();
 	//this->occupiedList[0] = true;	// Root directory
-	for (int i = 0; i < 250; i++)
+	for (int i = 0; i < BLOCKCOUNT; i++)
 		this->occupiedList[i] = -1;
 
 	//dirBlock newBlock;
@@ -268,13 +296,13 @@ void FileSystem::createFile(const std::string& path, const std::string& text) {
 	}
 
 	dirElement* curElement = &curDir->elements[curDir->nrOfElements++];
-	strncpy_s(curElement->name, name.c_str(), 14);	// Check if NULL TERMINATED
+	strncpy_s(curElement->name, name.c_str(), NAMECAP);	// Check if NULL TERMINATED
 	curElement->pointer = freeBlock;
-	curElement->flags = 1;	// TODO, READ/WRITE FLAGS
+	curElement->flags = 7;	// FLAGS: 11100000 (FILE,READ,WRITE)
 
 	this->mMemBlockDevice.writeBlock(curBlock, (char*)curDir);
-
 	this->occupiedList[freeBlock] = text.size();
+	this->increaseDirSize(path, text.size());
 
 	fileBlock newBlock;
 
@@ -284,13 +312,13 @@ void FileSystem::createFile(const std::string& path, const std::string& text) {
 	token[text.size()] = '\0';
 	int nextBlock = 0;
 	int i = 0;
-	while (i * 510 < text.size())
+	while (i * 511 < text.size())
 	{
 		memset(&newBlock, 0, sizeof(fileBlock));
 		
-		memcpy_s(newBlock.data, 510, token + 510*i, 510);
+		memcpy_s(newBlock.data, 511, token + 511*i, 511);
 		i++;
-		if (i * 510 < text.size())
+		if (i * 511 < text.size())
 		{
 			nextBlock = this->getFreeBlock();
 			newBlock.next = nextBlock;
@@ -319,9 +347,9 @@ void FileSystem::createFolder(const std::string& path)
 	}
 
 	dirElement* curElement = &curDir->elements[curDir->nrOfElements++];
-	strncpy_s(curElement->name, name.c_str(), 14);	// Check if NULL TERMINATED
+	strncpy_s(curElement->name, name.c_str(), NAMECAP);	// Check if NULL TERMINATED
 	curElement->pointer = freeBlock;
-	curElement->flags = 0;	// TODO, READ/WRITE FLAGS
+	curElement->flags = 6;	// FLAGS: 01100000 (FOLDER,READ,WRITE)
 
 	this->mMemBlockDevice.writeBlock(curBlock, (char*)curDir);
 
@@ -362,10 +390,13 @@ std::string FileSystem::listDir(const std::string& path)
 	std::string dataStr = this->mMemBlockDevice.readBlock(curNr).toString();
 	dirBlock* curDir = (dirBlock*)dataStr.c_str();
 
-	ss << "Type\t\tName\t\tPerm.\t\tSize" << std::endl;
+	ss << "Type\t\tName\t\tPermissions\tSize" << std::endl;
 	for (int i = 0; i < curDir->nrOfElements; i++)
 	{
-		ss << (curDir->elements[i].flags == 0 ? "Folder" : "File") << "\t\t" << curDir->elements[i].name << "\t\t" << "RW" << "\t\t" << this->occupiedList[curDir->elements[i].pointer] << std::endl;
+		ss	<< ((curDir->elements[i].flags & 1) == 0 ? "Folder" : "File") << "\t\t"
+			<< curDir->elements[i].name << ((strlen(curDir->elements[i].name) < 8) ? "\t\t" : "\t")
+			<< ((curDir->elements[i].flags & 2) == 2 ? "R" : "") << ((curDir->elements[i].flags & 4) == 4 ? "W" : "") << "\t\t"
+			<< this->occupiedList[curDir->elements[i].pointer] << " byte" << std::endl;
 	}
 	return ss.str();
 }
@@ -375,25 +406,28 @@ std::string FileSystem::readFile(const std::string& path)
 	std::string name;
 	int curBlock = this->getDirBlockIndex(path, name);
 
-	std::string dataStr = this->mMemBlockDevice.readBlock(curBlock).toString();
-	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+	//std::string dataStr = this->mMemBlockDevice.readBlock(curBlock).toString();
+	//dirBlock* curDir = (dirBlock*)dataStr.c_str();
 
-	bool found = false;
+	//bool found = false;
 
-	for (int i = 0; i < curDir->nrOfElements && !found; i++)
-	{
-		if (strcmp(curDir->elements[i].name, name.c_str()) == 0)
-		{
-			if (curDir->elements[i].flags == 0)
-				throw "Requested file is actually a folder";
-			found = true;
-			curBlock = curDir->elements[i].pointer;
-		}
-	}
-	if (!found)
-		throw "File not found";
+	//for (int i = 0; i < curDir->nrOfElements && !found; i++)
+	//{
+	//	if (strcmp(curDir->elements[i].name, name.c_str()) == 0)
+	//	{
+	//		if ((curDir->elements[i].flags & 1) == 0)
+	//			throw "Requested file is actually a folder";
+	//		found = true;
+	//		curBlock = curDir->elements[i].pointer;
+	//	}
+	//}
+	//if (!found)
+	//	throw "File not found";
+
+	curBlock = this->getBlockNr(curBlock, name, 1, 0);
 
 	bool readDone = false;
+	std::string dataStr;
 	fileBlock* curFile;
 	std::stringstream ss;
 	std::string token;
@@ -402,7 +436,7 @@ std::string FileSystem::readFile(const std::string& path)
 		dataStr = this->mMemBlockDevice.readBlock(curBlock).toString();
 		curFile = (fileBlock*)dataStr.c_str();
 		//ss.write(curFile->data, 510);
-		token = std::string(curFile->data, std::find(curFile->data, curFile->data + 510, '\0'));
+		token = std::string(curFile->data, std::find(curFile->data, curFile->data + 511, '\0'));
 		ss << token;
 		if (curFile->next == 0)
 			readDone = true;
@@ -411,6 +445,15 @@ std::string FileSystem::readFile(const std::string& path)
 	}
 
 	return ss.str();
+}
+
+void FileSystem::writeFile(const std::string& path, const std::string& text)
+{
+	std::string name;
+	int curBlock = this->getDirBlockIndex(path, name);
+	this->getBlockNr(curBlock, name, 1, 1);				// Just to check that the user have permission to write to this file
+	this->removeFile(path);
+	this->createFile(path, text);
 }
 
 void FileSystem::removeFile(const std::string& path)
@@ -428,11 +471,10 @@ void FileSystem::removeFile(const std::string& path)
 	{
 		if (strcmp(curDir->elements[i].name, name.c_str()) == 0)
 		{
-			if (curDir->elements[i].flags == 0)
+			if ((curDir->elements[i].flags & 1) == 0)
 				throw "Requested file is actually a folder";
 			found = true;
 			fileBlock = curDir->elements[i].pointer;
-			//curDir->nrOfElements--;
 			curDir->elements[i] = curDir->elements[--curDir->nrOfElements];
 			memset(&curDir->elements[curDir->nrOfElements], 0, sizeof(dirElement));
 			this->mMemBlockDevice.writeBlock(curBlock, (char*)curDir);
@@ -442,6 +484,7 @@ void FileSystem::removeFile(const std::string& path)
 		throw "File not found";
 
 	this->recursiveRemove(fileBlock);
+	this->increaseDirSize(path, -this->occupiedList[fileBlock]);
 	this->occupiedList[fileBlock] = -1;
 }
 
@@ -451,11 +494,11 @@ void FileSystem::copyFile(const std::string& source, const std::string& target)
 	int sourceDir = this->getDirBlockIndex(source, sourceName);
 	int targetDir = this->getDirBlockIndex(target, targetName);
 
-	int sourceFile = this->getBlockNr(sourceDir, sourceName);
+	int sourceFile = this->getBlockNr(sourceDir, sourceName, 1);
 	bool fileExists = false;
 	try
 	{
-		this->getBlockNr(targetDir, targetName);
+		this->getBlockNr(targetDir, targetName, 1);
 		fileExists = true;
 	}
 	catch (char* e)
@@ -470,6 +513,8 @@ void FileSystem::copyFile(const std::string& source, const std::string& target)
 	int targetStartIndex = targetIndex;
 	do
 	{
+		this->occupiedList[targetIndex] = this->occupiedList[sourceFile];
+
 		std::string sourceStr = this->mMemBlockDevice.readBlock(sourceFile).toString();
 		fileBlock* copiedBlock = (fileBlock*)sourceStr.c_str();
 		if (copiedBlock->next != 0)
@@ -481,5 +526,84 @@ void FileSystem::copyFile(const std::string& source, const std::string& target)
 		targetIndex = copiedBlock->next;
 	} while (targetIndex != 0);
 
+	dirElement element;
+	element.flags = 1;
+	strncpy_s(element.name, targetName.c_str(), NAMECAP);
+	element.pointer = targetStartIndex;
+	this->addDirElement(targetDir, &element);
 
+	this->increaseDirSize(target, this->occupiedList[targetStartIndex]);
+}
+
+void FileSystem::createImage(const std::string& path)
+{
+	binaryBlock image;
+	for (int i = 0; i < BLOCKCOUNT; i++)
+	{
+		memcpy_s(&image.data[i * BLOCKSIZE], BLOCKSIZE, this->mMemBlockDevice.readBlock(i).toString().c_str(), BLOCKSIZE);
+		image.occupiedList[i] = this->occupiedList[i];
+	}
+	std::ofstream file;
+	file.open(path, std::ofstream::binary);
+	if(!file.is_open())
+		throw "Couldn't save to file";
+	file.write((char*)&image, sizeof(image));
+	file.close();
+}
+
+void FileSystem::restoreImage(const std::string& path)
+{
+	binaryBlock image;
+	std::ifstream file;
+	file.open(path, std::ifstream::binary);
+	if (!file.is_open())
+		throw "Couldn't open file";
+	file.read((char*)&image, sizeof(image));
+
+	char blockData[BLOCKSIZE];
+	for (int i = 0; i < BLOCKCOUNT; i++)
+	{
+		memcpy_s(blockData, BLOCKSIZE, image.data + i * BLOCKSIZE, BLOCKSIZE);
+		this->mMemBlockDevice.writeBlock(i, blockData);
+		this->occupiedList[i] = image.occupiedList[i];
+	}
+	file.close();
+	this->workBlock = 0;
+}
+
+void FileSystem::increaseDirSize(const std::string& path, const int size)
+{
+	std::string junk;
+	this->recursiveIncreaseDirSize(this->getDirBlockIndex(path, junk), size);
+}
+
+void FileSystem::chmod(const std::string& path, char permission)
+{
+	if (permission > 3)
+		throw "Incorrect permission input";
+	permission <<= 1;
+
+	std::string name;
+	int curBlock = this->getDirBlockIndex(path, name);
+
+
+	std::string dataStr = this->mMemBlockDevice.readBlock(curBlock).toString();
+	dirBlock* curDir = (dirBlock*)dataStr.c_str();
+
+	bool found = false;
+
+	for (int i = 0; i < curDir->nrOfElements && !found; i++)
+	{
+		if (strcmp(curDir->elements[i].name, name.c_str()) == 0)
+		{
+			if ((curDir->elements[i].flags & 1) == 0)
+				throw "Requested file is actually a folder";
+			found = true;
+			curDir->elements[i].flags = (curDir->elements[i].flags & 1) | permission;
+		}
+	}
+	if (!found)
+		throw "File not found";
+
+	this->mMemBlockDevice.writeBlock(curBlock, (char*)curDir);
 }

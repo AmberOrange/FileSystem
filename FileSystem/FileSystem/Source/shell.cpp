@@ -3,13 +3,13 @@
 #include "../Header/filesystem.h"
 
 const int MAXCOMMANDS = 8;
-const int NUMAVAILABLECOMMANDS = 16;
+const int NUMAVAILABLECOMMANDS = 17;
 
 FileSystem fileSystem;
 
 std::string availableCommands[NUMAVAILABLECOMMANDS] = {
     "quit","format","ls","create","cat","createImage","restoreImage",
-    "rm","cp","append","mv","mkdir","cd","pwd","help","clear"
+    "rm","cp","append","mv","mkdir","cd","pwd","help","clear","chmod"
 };
 
 /* Takes usercommand from input and returns number of commands, commands are stored in strArr[] */
@@ -22,9 +22,15 @@ void format();
 void ls(const std::string& path);
 void create(const std::string& path);
 void cat(const std::string& path);
+void createImage(const std::string& path);
+void restoreImage(const std::string& path);
 void rm(const std::string& path);
+void cp(const std::string& source, const std::string& target);
+void append(const std::string& source, const std::string& target);
+void mv(const std::string& source, const std::string& target);
 void mkdir(const std::string& path);
 void cd(const std::string& path);
+void chmod(const std::string& path, const std::string& permission);
 std::string pwd();
 
 /* More functions ... */
@@ -65,17 +71,22 @@ int main(void) {
 					cat(commandArr[1]);
 					break;
 				case 5: // createImage
+					createImage(commandArr[1]);
 					break;
 				case 6: // restoreImage
+					restoreImage(commandArr[1]);
 					break;
 				case 7: // rm
 					rm(commandArr[1]);
 					break;
 				case 8: // cp
+					cp(commandArr[1], commandArr[2]);
 					break;
 				case 9: // append
+					append(commandArr[1], commandArr[2]);
 					break;
 				case 10: // mv
+					mv(commandArr[1], commandArr[2]);
 					break;
 				case 11: // mkdir
 					mkdir(commandArr[1]);
@@ -89,8 +100,11 @@ int main(void) {
 				case 14: // help
 					std::cout << help() << std::endl;
 					break;
-				case 15:
+				case 15: // clear
 					system("cls");	// Clear ONLY FOR WINDOWS
+					break;
+				case 16: // chmod
+					chmod(commandArr[1], commandArr[2]);
 					break;
 				default:
 					std::cout << "Unknown command: " << commandArr[0] << std::endl;
@@ -181,9 +195,36 @@ void cat(const std::string& path)
 	std::cout << fileSystem.readFile(path) << std::endl;
 }
 
+void createImage(const std::string& path)
+{
+	fileSystem.createImage(path);
+}
+
+void restoreImage(const std::string& path)
+{
+	fileSystem.restoreImage(path);
+}
+
 void rm(const std::string& path)
 {
 	fileSystem.removeFile(path);
+}
+void cp(const std::string& source, const std::string& target)
+{
+	fileSystem.copyFile(source, target);
+}
+
+void append(const std::string& source, const std::string& target)
+{
+	std::stringstream ss;
+	ss << fileSystem.readFile(source) << fileSystem.readFile(target);
+	fileSystem.writeFile(source, ss.str());
+}
+
+void mv(const std::string& source, const std::string& target)
+{
+	fileSystem.copyFile(source, target);
+	fileSystem.removeFile(source);
 }
 
 void mkdir(const std::string& path)
@@ -199,4 +240,9 @@ void cd(const std::string& path)
 std::string pwd()
 {
 	return fileSystem.printWorkDirectory();
+}
+
+void chmod(const std::string& path, const std::string& permission)
+{
+	fileSystem.chmod(path, (char)std::stoi(permission.c_str()));
 }
