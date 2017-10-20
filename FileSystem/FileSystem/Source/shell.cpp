@@ -1,15 +1,16 @@
 #include <iostream>
 #include <sstream>
 #include "../Header/filesystem.h"
+#include <string>
 
 const int MAXCOMMANDS = 8;
-const int NUMAVAILABLECOMMANDS = 17;
+const int NUMAVAILABLECOMMANDS = 18;
 
 FileSystem fileSystem;
 
 std::string availableCommands[NUMAVAILABLECOMMANDS] = {
     "quit","format","ls","create","cat","createImage","restoreImage",
-    "rm","cp","append","mv","mkdir","cd","pwd","help","clear","chmod"
+    "rm","cp","append","mv","mkdir","cd","pwd","help","clear","chmod", "debug"
 };
 
 /* Takes usercommand from input and returns number of commands, commands are stored in strArr[] */
@@ -32,6 +33,8 @@ void mkdir(const std::string& path);
 void cd(const std::string& path);
 void chmod(const std::string& path, const std::string& permission);
 std::string pwd();
+
+void debug();
 
 /* More functions ... */
 
@@ -101,16 +104,19 @@ int main(void) {
 					std::cout << help() << std::endl;
 					break;
 				case 15: // clear
-					system("cls");	// Clear ONLY FOR WINDOWS
+					std::cout << "\033[2J\033[;H";	// Clear 
 					break;
 				case 16: // chmod
 					chmod(commandArr[1], commandArr[2]);
+					break;
+				case 17: // debug
+					debug();
 					break;
 				default:
 					std::cout << "Unknown command: " << commandArr[0] << std::endl;
 				}
 			}
-			catch (char* e)
+			catch (char const* e)
 			{
 				std::cout << "Error: " << e << std::endl;
 			}
@@ -245,4 +251,24 @@ std::string pwd()
 void chmod(const std::string& path, const std::string& permission)
 {
 	fileSystem.chmod(path, (char)std::stoi(permission.c_str()));
+}
+
+void debug()
+{
+	std::string path = "";
+	std::string text = "Wubba Lubba Dub Dub!";
+	for(int i = 1; i < 250; i++)
+	{
+		path = "file" + std::to_string(i);
+		try
+		{
+			fileSystem.createFile(path, text);	
+
+		}
+		catch (std::out_of_range e)
+		{
+			std::cout << e.what() << ", AT: " << i << std::endl;
+		}
+
+	}
 }

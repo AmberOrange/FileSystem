@@ -16,19 +16,19 @@ private:
 
 	struct dirElement {
 		char flags;
-		char pointer;
+		unsigned char pointer;
 		char name[14];
 	};
 	struct dirBlock {
 		char flags;		// Is this block occupied or not?
 		char nrOfElements;
 		dirElement elements[31];
-		char next;
+		unsigned char next;
 		char padding[13];
 	};
 	struct fileBlock {
 		char data[511];
-		char next;
+		unsigned char next;
 	};
 	struct binaryBlock {
 		char data[BLOCKCOUNT*BLOCKSIZE];
@@ -49,10 +49,10 @@ private:
 	void setOccupiedBlock(const int blockNr);
 	std::stringstream recursivePath(const int blockNr, const int childNr);
 	void recursiveRemove(const int blockNr);
-	int getBlockNr(const int blockNr, const std::string& name, const char blockType = 2, const char permission = 0) const;	// 0 = Directory; 1 = File; > 2 = Doesn't matter
+	int getBlockNr(const int blockNr, const std::string& name, const char blockType = 2, const char permission = 0, int* flags = nullptr) const;	// 0 = Directory; 1 = File; > 2 = Doesn't matter
 	void addDirElement(const int blockNr, dirElement* element);
 	//int getElementIndex();
-	int createDirBlock();
+	int createDirBlock(bool expand = false);
 	void recursiveIncreaseDirSize(const int blockNr, const int size);
 
 public:
