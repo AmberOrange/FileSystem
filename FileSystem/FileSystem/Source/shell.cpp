@@ -104,7 +104,7 @@ int main(void) {
 					std::cout << help() << std::endl;
 					break;
 				case 15: // clear
-					std::cout << "\033[2J\033[;H";	// Clear 
+					std::cout << "\033[2J\033[;H";	// Clear ONLY WORKS ON LINUX
 					break;
 				case 16: // chmod
 					chmod(commandArr[1], commandArr[2]);
@@ -257,7 +257,7 @@ void debug()
 {
 	std::string path = "";
 	std::string text = "Wubba Lubba Dub Dub!";
-	for(int i = 1; i < 250; i++)
+	for(int i = 1; i < 243; i++)
 	{
 		path = "file" + std::to_string(i);
 		try
@@ -269,6 +269,19 @@ void debug()
 		{
 			std::cout << e.what() << ", AT: " << i << std::endl;
 		}
+	}
 
+	for (int i = 1; i < 242; i++)
+	{
+		path = "file" + std::to_string(i);
+		try
+		{
+			fileSystem.removeFile(path);
+
+		}
+		catch (char const* e)
+		{
+			std::cout << e << ", AT: " << i << std::endl;
+		}
 	}
 }
