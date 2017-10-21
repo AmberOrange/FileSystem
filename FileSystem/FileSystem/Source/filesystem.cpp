@@ -33,7 +33,6 @@ int FileSystem::getDirBlockIndex(const std::string& path, std::string& name, boo
 {
 	std::stringstream stream = std::stringstream(path);
 	std::string dataStr;
-	dirBlock* curDir;
 	int nextBlock;
 
 	bool abs;
@@ -118,6 +117,7 @@ std::stringstream FileSystem::recursivePath(const int blockNr, const int childNr
 			return ss;
 		}
 	}
+	return ss;
 }
 
 void FileSystem::recursiveRemove(const int blockNr)
@@ -279,7 +279,7 @@ void FileSystem::createFile(const std::string& path, const std::string& text) {
 	}
 	catch (char const* e)
 	{
-
+		
 	}
 
 	if (fileExists)
@@ -312,8 +312,8 @@ void FileSystem::createFile(const std::string& path, const std::string& text) {
 	curElement->pointer = freeBlock;
 	curElement->flags = 7;	// FLAGS: 11100000 (FILE,READ,WRITE)
 	this->mMemBlockDevice.writeBlock(curBlock, (char*)curDir);
-	this->occupiedList[freeBlock] = text.size();
-	this->increaseDirSize(path, text.size());
+	this->occupiedList[freeBlock] = (int)text.size();
+	this->increaseDirSize(path, (int)text.size());
 
 	fileBlock newBlock;
 
