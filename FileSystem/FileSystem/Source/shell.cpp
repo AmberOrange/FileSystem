@@ -4,13 +4,13 @@
 #include <string>
 
 const int MAXCOMMANDS = 8;
-const int NUMAVAILABLECOMMANDS = 18;
+const int NUMAVAILABLECOMMANDS = 16;
 
 FileSystem fileSystem;
 
 std::string availableCommands[NUMAVAILABLECOMMANDS] = {
     "quit","format","ls","create","cat","createImage","restoreImage",
-    "rm","cp","append","mv","mkdir","cd","pwd","help","clear","chmod", "debug"
+    "rm","cp","append","mv","mkdir","cd","pwd","help","chmod"
 };
 
 /* Takes usercommand from input and returns number of commands, commands are stored in strArr[] */
@@ -33,8 +33,6 @@ void mkdir(const std::string& path);
 void cd(const std::string& path);
 void chmod(const std::string& path, const std::string& permission);
 std::string pwd();
-
-void debug();
 
 /* More functions ... */
 
@@ -103,14 +101,8 @@ int main(void) {
 				case 14: // help
 					std::cout << help() << std::endl;
 					break;
-				case 15: // clear
-					std::cout << "\033[2J\033[;H";	// Clear ONLY WORKS ON LINUX
-					break;
-				case 16: // chmod
+				case 15: // chmod
 					chmod(commandArr[1], commandArr[2]);
-					break;
-				case 17: // debug
-					debug();
 					break;
 				default:
 					std::cout << "Unknown command: " << commandArr[0] << std::endl;
@@ -160,7 +152,7 @@ std::string help() {
     helpStr += "OSD Disk Tool .oO Help Screen Oo.\n";
     helpStr += "-----------------------------------------------------------------------------------\n" ;
     helpStr += "* quit:                             Quit OSD Disk Tool\n";
-    helpStr += "* format;                           Formats disk\n";
+    helpStr += "* format:                           Formats disk\n";
     helpStr += "* ls     <path>:                    Lists contents of <path>.\n";
     helpStr += "* create <path>:                    Creates a file and stores contents in <path>\n";
     helpStr += "* cat    <path>:                    Dumps contents of <file>.\n";
@@ -173,7 +165,8 @@ std::string help() {
     helpStr += "* mkdir  <directory>:               Creates a new directory called <directory>\n";
     helpStr += "* cd     <directory>:               Changes current working directory to <directory>\n";
     helpStr += "* pwd:                              Get current working directory\n";
-    helpStr += "* help:                             Prints this help screen\n";
+	helpStr += "* chmod  <file> <mode>:             Change permission mode of a file\n";
+	helpStr += "* help:                             Prints this help screen\n";
     return helpStr;
 }
 
@@ -251,37 +244,4 @@ std::string pwd()
 void chmod(const std::string& path, const std::string& permission)
 {
 	fileSystem.chmod(path, (char)std::stoi(permission.c_str()));
-}
-
-void debug()
-{
-	std::string path = "";
-	std::string text = "Wubba Lubba Dub Dub!";
-	for(int i = 1; i < 243; i++)
-	{
-		path = "file" + std::to_string(i);
-		try
-		{
-			fileSystem.createFile(path, text);	
-
-		}
-		catch (std::out_of_range e)
-		{
-			std::cout << e.what() << ", AT: " << i << std::endl;
-		}
-	}
-
-	for (int i = 1; i < 242; i++)
-	{
-		path = "file" + std::to_string(i);
-		try
-		{
-			fileSystem.removeFile(path);
-
-		}
-		catch (char const* e)
-		{
-			std::cout << e << ", AT: " << i << std::endl;
-		}
-	}
 }
